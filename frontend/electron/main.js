@@ -1,8 +1,37 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, shell } = require('electron');
 const path = require('path');
+const { spawn } = require('child_process');
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 
 let mainWindow;
+let backendProcess;
+
+function startBackend() {
+  const backendPath = isDev 
+    ? path.join(__dirname, '../backend')
+    : path.join(process.resourcesPath, 'backend');
+
+  const backendExe = process.platform === 'win32' 
+    ? path.join(backendPath, 'node_modules/.bin/node.cmd')
+    : path.join(backendPath, 'node_modules/.bin/node');
+
+  if (process.platform === 'win32') {
+    backendProcess = spawn(backendExe, ['server.js'], {
+      cwd: backendPath,
+      stdio: 'inherit',
+      shell: true,
+      env: { ...process.env, PORT: '3001', DB_PATH: path.join(app.getPath('userData'), 'quickmart.db') }
+    });
+  } else {
+    backendProcess = spawn('node', ['server.js'], {
+      cwd: backendPath,
+      stdio: 'inherit',
+      env: { ...process.env, PORT: '3001', DB_PATH: path.join(app.getPath('userData'), 'quickmart.db') }
+    });
+  }
+
+  console.log('Backend starting...');
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -15,7 +44,6 @@ function createWindow() {
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js')
     },
-    icon: path.join(__dirname, '../public/icon.ico'),
     show: false
   });
 
@@ -26,7 +54,6 @@ function createWindow() {
 
   if (isDev) {
     mainWindow.loadURL('http://localhost:4070');
-    mainWindow.webContents.openDevTools();
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
@@ -37,7 +64,12 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  createWindow();
+  startBackend();
+  
+  setTimeout(() => {
+    createWindow();
+  }, 2000);
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
@@ -46,14 +78,16 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
+  if (backendProcess) {
+    backendProcess.kill();
+  }
   if (process.platform !== 'darwin') {
     app.quit();
   }
 });
 
 app.on('before-quit', () => {
-  if (mainWindow) {
-    mainWindow.removeAllListeners('close');
-    mainWindow.close();
+  if (backendProcess) {
+    backendProcess.kill();
   }
 });
