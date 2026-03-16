@@ -18,6 +18,12 @@ function App() {
   const [loginData, setLoginData] = useState({ username: '', password: '' })
   const [loginError, setLoginError] = useState('')
   const [isLoggingIn, setIsLoggingIn] = useState(false)
+  const [showAdmin, setShowAdmin] = useState(false)
+  const [adminTab, setAdminTab] = useState('products')
+  const [transactions, setTransactions] = useState([])
+  const [newProduct, setNewProduct] = useState({ name: '', price: '', category: '', image: '', stock: '' })
+  const [editingProduct, setEditingProduct] = useState(null)
+  const [newCategory, setNewCategory] = useState({ name: '', icon: '' })
 
   useEffect(() => {
     const savedToken = localStorage.getItem('pos_token')
@@ -126,9 +132,89 @@ function App() {
       })
     } catch {}
     setUser(null)
+    setShowAdmin(false)
     localStorage.removeItem('pos_token')
     localStorage.removeItem('pos_user')
     setCart([])
+  }
+
+  const fetchTransactions = async () => {
+    try {
+      const res = await fetch(`${API_URL}/transactions?limit=100`, {
+        headers: { 'Authorization': `Bearer ${user.token}` }
+      })
+      const data = await res.json()
+      setTransactions(data)
+    } catch (error) {
+      console.error('Failed to fetch transactions:', error)
+    }
+  }
+
+  const handleAddProduct = async (e) => {
+    e.preventDefault()
+    try {
+      await fetch(`${API_URL}/products`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.token}`
+        },
+        body: JSON.stringify(newProduct)
+      })
+      setNewProduct({ name: '', price: '', category: '', image: '', stock: '' })
+      fetchData(user.token)
+    } catch (error) {
+      console.error('Failed to add product:', error)
+    }
+  }
+
+  const handleUpdateProduct = async (e) => {
+    e.preventDefault()
+    try {
+      await fetch(`${API_URL}/products/${editingProduct.id}`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.token}`
+        },
+        body: JSON.stringify(editingProduct)
+      })
+      setEditingProduct(null)
+      fetchData(user.token)
+    } catch (error) {
+      console.error('Failed to update product:', error)
+    }
+  }
+
+  const handleDeleteProduct = async (id) => {
+    if (!confirm('Delete this product?')) return
+    try {
+      await fetch(`${API_URL}/products/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${user.token}` }
+      })
+      fetchData(user.token)
+    } catch (error) {
+      console.error('Failed to delete product:', error)
+    }
+  }
+
+  const handleAddCategory = async (e) => {
+    e.preventDefault()
+    try {
+      await fetch(`${API_URL}/categories`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.token}`
+        },
+        body: JSON.stringify(newCategory)
+      })
+      setNewCategory({ name: '', icon: '' })
+      fetchData(user.token)
+    } catch (error) {
+      console.error('Failed to add category:', error)
+    }
   }
 
   const addToCart = (product) => {
@@ -255,11 +341,6 @@ function App() {
               {isLoggingIn ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
-          <div className="login-hint">
-            <p>Demo accounts:</p>
-            <code>admin / admin123</code>
-            <code>cashier / cashier123</code>
-          </div>
         </div>
       </div>
     )
@@ -296,6 +377,14 @@ function App() {
               <span className="user-name">{user.name}</span>
               <span className="user-role">{user.role}</span>
             </div>
+            {user.role === 'manager' && (
+              <button className="btn-admin" onClick={() => { setShowAdmin(!showAdmin); if (!showAdmin) fetchTransactions(); }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
+                  <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
+                </svg>
+              </button>
+            )}
             <button className="btn-logout" onClick={handleLogout}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" />
@@ -461,6 +550,104 @@ function App() {
             <p>Transaction completed via {paymentMethod}</p>
             <div className="amount">{formatCurrency(lastTransaction?.total || 0)}</div>
             <button onClick={() => setShowSuccess(false)}>New Transaction</button>
+          </div>
+        </div>
+      )}
+
+      {showAdmin && (
+        <div className="modal-overlay" onClick={() => setShowAdmin(false)}>
+          <div className="admin-panel" onClick={e => e.stopPropagation()}>
+            <div className="admin-header">
+              <h2>Admin Panel</h2>
+              <button className="admin-close" onClick={() => setShowAdmin(false)}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="admin-tabs">
+              <button className={adminTab === 'products' ? 'active' : ''} onClick={() => setAdminTab('products')}>Products</button>
+              <button className={adminTab === 'categories' ? 'active' : ''} onClick={() => setAdminTab('categories')}>Categories</button>
+              <button className={adminTab === 'transactions' ? 'active' : ''} onClick={() => setAdminTab('transactions')}>Transactions</button>
+            </div>
+            <div className="admin-content">
+              {adminTab === 'products' && (
+                <div className="admin-section">
+                  <form className="admin-form" onSubmit={editingProduct ? handleUpdateProduct : handleAddProduct}>
+                    <h3>{editingProduct ? 'Edit Product' : 'Add New Product'}</h3>
+                    <input type="text" placeholder="Product Name" value={editingProduct ? editingProduct.name : newProduct.name} onChange={(e) => editingProduct ? setEditingProduct({...editingProduct, name: e.target.value}) : setNewProduct({...newProduct, name: e.target.value})} required />
+                    <input type="number" step="0.01" placeholder="Price" value={editingProduct ? editingProduct.price : newProduct.price} onChange={(e) => editingProduct ? setEditingProduct({...editingProduct, price: e.target.value}) : setNewProduct({...newProduct, price: e.target.value})} required />
+                    <select value={editingProduct ? editingProduct.category : newProduct.category} onChange={(e) => editingProduct ? setEditingProduct({...editingProduct, category: e.target.value}) : setNewProduct({...newProduct, category: e.target.value})} required>
+                      <option value="">Select Category</option>
+                      {categories.filter(c => c.name !== 'All').map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                    </select>
+                    <input type="number" placeholder="Stock" value={editingProduct ? editingProduct.stock : newProduct.stock} onChange={(e) => editingProduct ? setEditingProduct({...editingProduct, stock: e.target.value}) : setNewProduct({...newProduct, stock: e.target.value})} required />
+                    <input type="text" placeholder="Image URL" value={editingProduct ? editingProduct.image : newProduct.image} onChange={(e) => editingProduct ? setEditingProduct({...editingProduct, image: e.target.value}) : setNewProduct({...newProduct, image: e.target.value})} />
+                    <div className="form-actions">
+                      <button type="submit">{editingProduct ? 'Update' : 'Add'} Product</button>
+                      {editingProduct && <button type="button" className="btn-cancel" onClick={() => setEditingProduct(null)}>Cancel</button>}
+                    </div>
+                  </form>
+                  <div className="admin-list">
+                    <h3>Product List</h3>
+                    <div className="list-items">
+                      {products.map(p => (
+                        <div key={p.id} className="list-item">
+                          <img src={p.image} alt={p.name} className="list-item-img" />
+                          <div className="list-item-info">
+                            <span className="list-item-name">{p.name}</span>
+                            <span className="list-item-meta">{p.category} | Stock: {p.stock}</span>
+                          </div>
+                          <span className="list-item-price">{formatCurrency(p.price)}</span>
+                          <div className="list-item-actions">
+                            <button onClick={() => setEditingProduct(p)}>Edit</button>
+                            <button className="btn-delete" onClick={() => handleDeleteProduct(p.id)}>Delete</button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+              {adminTab === 'categories' && (
+                <div className="admin-section">
+                  <form className="admin-form" onSubmit={handleAddCategory}>
+                    <h3>Add New Category</h3>
+                    <input type="text" placeholder="Category Name" value={newCategory.name} onChange={(e) => setNewCategory({...newCategory, name: e.target.value})} required />
+                    <input type="text" placeholder="Icon (emoji)" value={newCategory.icon} onChange={(e) => setNewCategory({...newCategory, icon: e.target.value})} />
+                    <button type="submit">Add Category</button>
+                  </form>
+                  <div className="admin-list">
+                    <h3>Categories</h3>
+                    <div className="list-items">
+                      {categories.filter(c => c.name !== 'All').map(c => (
+                        <div key={c.id} className="list-item">
+                          <span className="category-icon">{c.icon}</span>
+                          <span className="list-item-name">{c.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+              {adminTab === 'transactions' && (
+                <div className="admin-section">
+                  <h3>Transaction History</h3>
+                  <div className="list-items">
+                    {transactions.map(t => (
+                      <div key={t.id} className="list-item">
+                        <div className="list-item-info">
+                          <span className="list-item-name">#{t.id.slice(0, 8)}</span>
+                          <span className="list-item-meta">{new Date(t.createdAt).toLocaleString()} | {t.paymentMethod}</span>
+                        </div>
+                        <span className="list-item-price">{formatCurrency(t.total)}</span>
+                        <span className="item-count">{t.items?.length} items</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
