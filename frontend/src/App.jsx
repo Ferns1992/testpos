@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 
-const API_URL = '/api'
+const isElectron = typeof window !== 'undefined' && window.electronAPI;
+const API_BASE = isElectron ? 'http://localhost:3001' : '';
+const API_URL = `${API_BASE}/api`;
 
 function App() {
   const [products, setProducts] = useState([])

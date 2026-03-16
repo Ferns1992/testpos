@@ -13,35 +13,73 @@ A modern 7-Eleven style Point of Sale application with login authentication and 
 - Daily sales statistics
 - User authentication (login/logout)
 - Persistent SQLite database
+- Admin panel for managers (add/edit/delete products, categories)
+- Windows desktop application (.exe)
 
 ## Tech Stack
 
-- **Frontend**: React 18 + Vite
+- **Frontend**: React 18 + Vite + Electron
 - **Backend**: Node.js + Express
 - **Database**: SQLite (better-sqlite3)
 - **Containerization**: Docker + Docker Compose
 
-## Getting Started
+## Two Ways to Run
 
-### Prerequisites
+### Option 1: Windows Desktop App (.exe)
 
+**Requirements:**
+- Node.js 18+
+- npm
+
+**Steps:**
+
+1. Start the backend server:
+```bash
+# From project root
+cd backend
+npm install
+npm start
+```
+
+2. Build and run the Windows app:
+```bash
+# From frontend folder
+cd frontend
+npm install
+npm run dist:win
+```
+
+3. The installer will be in `frontend/release/` - run the .exe to install
+
+### Option 2: Docker (Web Browser)
+
+**Requirements:**
 - Docker
 - Docker Compose
 
-### Installation & Running
-
+**Steps:**
 ```bash
 docker-compose up --build -d
 ```
 
 Access the application at: **http://localhost:4070**
 
-### Default Login Accounts
+## Default Login Accounts
 
 | Username | Password | Role |
 |----------|----------|------|
 | admin | admin123 | Manager |
 | cashier | cashier123 | Cashier |
+
+**Note:** Ask your administrator for the login credentials.
+
+## Admin Panel
+
+The admin panel is available for managers only. After logging in as `admin`:
+- Click the settings gear icon in the header to access
+- **Products** - Add, edit, delete store products
+- **Categories** - Add new product categories
+- **Transactions** - View transaction history
 
 ## API Endpoints
 
@@ -59,17 +97,19 @@ Access the application at: **http://localhost:4070**
 ```
 ├── backend/
 │   ├── server.js       # Express API
-│   ├── database.js     # SQLite setup & seed data
+│   ├── database.js    # SQLite setup & seed data
 │   ├── Dockerfile      # Backend container
 │   └── package.json
 ├── frontend/
+│   ├── electron/       # Electron main process
 │   ├── src/
-│   │   ├── App.jsx     # Main React component
-│   │   └── index.css   # Styles
-│   ├── Dockerfile      # Frontend container (nginx)
-│   └── nginx.conf      # Nginx proxy config
+│   │   ├── App.jsx    # Main React component
+│   │   └── index.css  # Styles
+│   ├── Dockerfile     # Frontend container (nginx)
+│   ├── nginx.conf     # Nginx proxy config
+│   └── package.json
 ├── docker-compose.yml  # Docker orchestration
-└── SPEC.md            # Detailed specification
+└── SPEC.md           # Detailed specification
 ```
 
 ## License
