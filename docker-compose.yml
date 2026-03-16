@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: quickmart-backend
+    environment:
+      - PORT=3001
+      - DB_PATH=/data/quickmart.db
+    volumes:
+      - db-data:/data
+    networks:
+      - quickmart-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: quickmart-frontend
+    ports:
+      - "4070:80"
+    depends_on:
+      - backend
+    networks:
+      - quickmart-network
+    restart: unless-stopped
+
+networks:
+  quickmart-network:
+    driver: bridge
+
+volumes:
+  db-data:
+    driver: local
