@@ -10,8 +10,10 @@
     "preview": "vite preview",
     "electron": "electron .",
     "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:4070 && electron .\"",
-    "dist": "vite build && electron-builder",
-    "dist:win": "vite build && electron-builder --win --dir"
+    "install:backend": "cd ../backend && npm install",
+    "prebuild": "npm run install:backend",
+    "dist": "npm run build && electron-builder --win --dir",
+    "dist:win": "npm run build && electron-builder --win --dir"
   },
   "dependencies": {
     "react": "^18.2.0",
@@ -33,15 +35,12 @@
     },
     "files": [
       "dist/**/*",
-      "electron/**/*",
-      "../backend/**/*",
-      "../backend/package.json"
+      "electron/**/*"
     ],
     "extraResources": [
       {
         "from": "../backend",
-        "to": "backend",
-        "filter": ["**/*"]
+        "to": "backend"
       }
     ],
     "win": {
@@ -52,6 +51,6 @@
         }
       ]
     },
-    "asar": true
+    "asar": false
   }
 }

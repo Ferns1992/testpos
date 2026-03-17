@@ -11,16 +11,27 @@ function startBackend() {
     ? path.join(__dirname, '../backend')
     : path.join(process.resourcesPath, 'backend');
 
-  const backendExe = process.platform === 'win32' 
-    ? path.join(backendPath, 'node_modules/.bin/node.cmd')
-    : path.join(backendPath, 'node_modules/.bin/node');
+  console.log('Backend path:', backendPath);
+
+  const nodeExe = process.platform === 'win32' ? 'node.exe' : 'node';
+  const nodePath = process.platform === 'win32'
+    ? path.join(process.env['ProgramFiles'] || 'C:\\Program Files', 'nodejs', nodeExe)
+    : 'node';
 
   if (process.platform === 'win32') {
-    backendProcess = spawn(backendExe, ['server.js'], {
+    backendProcess = spawn(nodePath, ['server.js'], {
       cwd: backendPath,
-      stdio: 'inherit',
-      shell: true,
+      detached: false,
+      stdio: 'pipe',
       env: { ...process.env, PORT: '3001', DB_PATH: path.join(app.getPath('userData'), 'quickmart.db') }
+    });
+    
+    backendProcess.stdout.on('data', (data) => {
+      console.log('Backend:', data.toString());
+    });
+    
+    backendProcess.stderr.on('data', (data) => {
+      console.log('Backend error:', data.toString());
     });
   } else {
     backendProcess = spawn('node', ['server.js'], {
@@ -30,7 +41,7 @@ function startBackend() {
     });
   }
 
-  console.log('Backend starting...');
+  console.log('Backend starting on port 3001...');
 }
 
 function createWindow() {
@@ -68,7 +79,7 @@ app.whenReady().then(() => {
   
   setTimeout(() => {
     createWindow();
-  }, 2000);
+  }, 4000);
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
