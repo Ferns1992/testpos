@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 
-const isElectron = typeof window !== 'undefined' && window.electronAPI;
+const isElectron = typeof window !== 'undefined' && navigator.userAgent.includes('Electron');
 const API_BASE = isElectron ? 'http://localhost:3001' : '';
 const API_URL = `${API_BASE}/api`;
 
